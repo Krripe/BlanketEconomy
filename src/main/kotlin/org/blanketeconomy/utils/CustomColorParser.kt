@@ -9,56 +9,12 @@ import net.minecraft.text.Text
 object CustomColorParser {
     private val miniMessage = MiniMessage.miniMessage()
 
-    fun toNativeWithOutPrefix(displayname: String): Text? {
-        return toNative(miniMessage.deserialize(replaceNative(displayname)))
-    }
-
     private fun toNative(displayname: String): Text? {
         return toNative(miniMessage.deserialize(replaceNative(displayname)))
     }
 
     private fun toNative(component: Component): Text? {
         return Text.Serializer.fromJson(GsonComponentSerializer.gson().serialize(component))
-    }
-
-    fun toNativeL(lore: List<String>): List<Text?> {
-        val loreComponents: MutableList<Component> = ArrayList()
-        for (loreLine in lore) {
-            loreComponents.add(miniMessage.deserialize(replaceNative(loreLine)))
-        }
-        return toNative(loreComponents)
-    }
-
-    fun toNativeLWithOutPrefix(lore: List<String>): List<Text?> {
-        val loreComponents: MutableList<Component> = ArrayList()
-        for (loreLine in lore) {
-            loreComponents.add(miniMessage.deserialize(replaceNative(loreLine)))
-        }
-        return toNativeLWithOut(loreComponents)
-    }
-
-    private fun toNativeLWithOut(components: List<Component>): List<Text?> {
-        val nativeComponents: MutableList<Text?> = ArrayList()
-        for (component in components) {
-            nativeComponents.add(toNative(component))
-        }
-        return nativeComponents
-    }
-
-    private fun toNative(components: List<Component>): List<Text?> {
-        val nativeComponents: MutableList<Text?> = ArrayList()
-        for (component in components) {
-            nativeComponents.add(toNative(component))
-        }
-        return nativeComponents
-    }
-
-    fun fromNative(component: Text?): Component {
-        return GsonComponentSerializer.gson().deserialize(Text.Serializer.toJson(component))
-    }
-
-    fun toNativeFromString(displayname: String): Component {
-        return miniMessage.deserialize(replaceNative(displayname))
     }
 
     private fun replaceNative(displayname: String): String {
