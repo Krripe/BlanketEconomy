@@ -52,6 +52,8 @@ dependencies {
     // Fabric API. This is technically optional, but you probably want it anyway.
     modImplementation("net.fabricmc.fabric-api:fabric-api:${project.property("fabric_version")}")
     modImplementation(files("libs/fabric-permissions-api-0.3.1.jar"))
+    modImplementation("net.kyori:adventure-text-serializer-gson:4.14.0")
+    modImplementation("net.kyori:adventure-text-minimessage:4.14.0")
 }
 
 tasks.processResources {

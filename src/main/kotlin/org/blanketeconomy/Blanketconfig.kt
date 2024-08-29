@@ -181,6 +181,6 @@ object Blanketconfig {
             message = message.replace("%$placeholder%", value)
         }
 
-        return CustomColorParser.parseCustomColoredText(message)
+        return CustomColorParser.toNativeComponent(message)
     }
 }
