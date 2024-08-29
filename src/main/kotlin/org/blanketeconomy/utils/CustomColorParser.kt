@@ -1,74 +1,95 @@
 package org.blanketeconomy.utils
 
+import net.kyori.adventure.text.Component
+import net.kyori.adventure.text.minimessage.MiniMessage
+import net.kyori.adventure.text.serializer.gson.GsonComponentSerializer
 import net.minecraft.text.MutableText
 import net.minecraft.text.Text
-import net.minecraft.text.TextColor
-import net.minecraft.text.Style
-import java.util.regex.Pattern
 
 object CustomColorParser {
+    private val miniMessage = MiniMessage.miniMessage()
 
-    private val colorMap = mapOf(
-        "&0" to TextColor.fromRgb(0x000000), // Black
-        "&1" to TextColor.fromRgb(0x0000AA), // Dark Blue
-        "&2" to TextColor.fromRgb(0x00AA00), // Dark Green
-        "&3" to TextColor.fromRgb(0x00AAAA), // Dark Aqua
-        "&4" to TextColor.fromRgb(0xAA0000), // Dark Red
-        "&5" to TextColor.fromRgb(0xAA00AA), // Dark Purple
-        "&6" to TextColor.fromRgb(0xFFAA00), // Gold
-        "&7" to TextColor.fromRgb(0xAAAAAA), // Gray
-        "&8" to TextColor.fromRgb(0x555555), // Dark Gray
-        "&9" to TextColor.fromRgb(0x5555FF), // Blue
-        "&a" to TextColor.fromRgb(0x55FF55), // Green
-        "&b" to TextColor.fromRgb(0x55FFFF), // Aqua
-        "&c" to TextColor.fromRgb(0xFF5555), // Red
-        "&d" to TextColor.fromRgb(0xFF55FF), // Light Purple
-        "&e" to TextColor.fromRgb(0xFFFF55), // Yellow
-        "&f" to TextColor.fromRgb(0xFFFFFF)  // White
-    )
+    fun toNativeWithOutPrefix(displayname: String): Text? {
+        return toNative(miniMessage.deserialize(replaceNative(displayname)))
+    }
 
-    fun parseCustomColoredText(input: String): MutableText {
-        val regex = Pattern.compile("&x(?:&[0-9A-Fa-f]){6}|&[0-9A-Fa-f]|&[k-oK-OrR]")
-        val matcher = regex.matcher(input)
+    private fun toNative(displayname: String): Text? {
+        return toNative(miniMessage.deserialize(replaceNative(displayname)))
+    }
 
-        val result = Text.literal("")
-        var currentStyle = Style.EMPTY.withColor(TextColor.fromRgb(0xFFFFFF))
-        var lastIndex = 0
+    private fun toNative(component: Component): Text? {
+        return Text.Serializer.fromJson(GsonComponentSerializer.gson().serialize(component))
+    }
 
-        while (matcher.find()) {
-            if (matcher.start() > lastIndex) {
-                result.append(Text.literal(input.substring(lastIndex, matcher.start())).setStyle(currentStyle))
-            }
-
-            val match = matcher.group()
-            when {
-                match.startsWith("&x") -> {
-                    val hex = match.substring(2).replace("&", "")
-                    currentStyle = currentStyle.withColor(TextColor.fromRgb(hex.toInt(16)))
-                }
-                match.startsWith("&") -> {
-                    when (match) {
-                        in colorMap.keys -> {
-                            colorMap[match]?.let {
-                                currentStyle = currentStyle.withColor(it)
-                            }
-                        }
-                        "&k" -> currentStyle = currentStyle.withObfuscated(true)
-                        "&l" -> currentStyle = currentStyle.withBold(true)
-                        "&m" -> currentStyle = currentStyle.withStrikethrough(true)
-                        "&n" -> currentStyle = currentStyle.withUnderline(true)
-                        "&o" -> currentStyle = currentStyle.withItalic(true)
-                        "&r" -> currentStyle = Style.EMPTY
-                    }
-                }
-            }
-            lastIndex = matcher.end()
+    fun toNativeL(lore: List<String>): List<Text?> {
+        val loreComponents: MutableList<Component> = ArrayList()
+        for (loreLine in lore) {
+            loreComponents.add(miniMessage.deserialize(replaceNative(loreLine)))
         }
+        return toNative(loreComponents)
+    }
 
-        if (lastIndex < input.length) {
-            result.append(Text.literal(input.substring(lastIndex)).setStyle(currentStyle))
+    fun toNativeLWithOutPrefix(lore: List<String>): List<Text?> {
+        val loreComponents: MutableList<Component> = ArrayList()
+        for (loreLine in lore) {
+            loreComponents.add(miniMessage.deserialize(replaceNative(loreLine)))
         }
+        return toNativeLWithOut(loreComponents)
+    }
 
-        return result
+    private fun toNativeLWithOut(components: List<Component>): List<Text?> {
+        val nativeComponents: MutableList<Text?> = ArrayList()
+        for (component in components) {
+            nativeComponents.add(toNative(component))
+        }
+        return nativeComponents
+    }
+
+    private fun toNative(components: List<Component>): List<Text?> {
+        val nativeComponents: MutableList<Text?> = ArrayList()
+        for (component in components) {
+            nativeComponents.add(toNative(component))
+        }
+        return nativeComponents
+    }
+
+    fun fromNative(component: Text?): Component {
+        return GsonComponentSerializer.gson().deserialize(Text.Serializer.toJson(component))
+    }
+
+    fun toNativeFromString(displayname: String): Component {
+        return miniMessage.deserialize(replaceNative(displayname))
+    }
+
+    private fun replaceNative(displayname: String): String {
+        var processedDisplayName = displayname
+        processedDisplayName = processedDisplayName.replace("&", "§")
+            .replace("§0", "§r<black>")
+            .replace("§1", "§r<dark_blue>")
+            .replace("§2", "§r<dark_green>")
+            .replace("§3", "§r<dark_aqua>")
+            .replace("§4", "§r<dark_red>")
+            .replace("§5", "§r<dark_purple>")
+            .replace("§6", "§r<gold>")
+            .replace("§7", "§r<gray>")
+            .replace("§8", "§r<dark_gray>")
+            .replace("§9", "§r<blue>")
+            .replace("§a", "§r<green>")
+            .replace("§b", "§r<aqua>")
+            .replace("§c", "§r<red>")
+            .replace("§d", "§r<light_purple>")
+            .replace("§e", "§r<yellow>")
+            .replace("§f", "§r<white>")
+            .replace("§k", "<obfuscated>")
+            .replace("§l", "<bold>")
+            .replace("§m", "<strikethrough>")
+            .replace("§n", "<underline>")
+            .replace("§o", "<italic>")
+            .replace("§r", "<reset>")
+        return processedDisplayName
+    }
+
+    fun toNativeComponent(messageContent: String): MutableText {
+        return Text.empty().append(toNative(messageContent))
     }
 }

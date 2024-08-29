@@ -235,15 +235,14 @@ class Blanketeconomy : ModInitializer {
 
             if (currencyConfig != null) {
                 val paperStack = ItemStack(Items.PAPER, amount).apply {
-
                     orCreateNbt.putInt("CustomModelData", currencyConfig.custommodeldata)
 
-                    setCustomName(CustomColorParser.parseCustomColoredText(currencyConfig.name))
+                    setCustomName(CustomColorParser.toNativeComponent(currencyConfig.name))
 
                     val displayTag = orCreateNbt.getCompound("display")
                     val loreList = NbtList()
 
-                    loreList.add(NbtString.of(Text.Serializer.toJson(CustomColorParser.parseCustomColoredText(currencyConfig.lore))))
+                    loreList.add(NbtString.of(Text.Serializer.toJson(CustomColorParser.toNativeComponent(currencyConfig.lore))))
 
                     displayTag.put("Lore", loreList)
                     orCreateNbt.put("display", displayTag)
