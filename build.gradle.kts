@@ -5,6 +5,7 @@ plugins {
     kotlin("jvm") version "2.0.20"
     id("fabric-loom") version "1.7.1"
     id("maven-publish")
+    id("com.gradle.plugin-publish") version "1.2.2"
 }
 
 version = project.property("mod_version") as String
@@ -40,6 +41,7 @@ repositories {
     // Loom adds the essential maven repositories to download Minecraft and libraries from automatically.
     // See https://docs.gradle.org/current/userguide/declaring_repositories.html
     // for more information about repositories.
+    maven ("https://jitpack.io")
 }
 
 dependencies {
