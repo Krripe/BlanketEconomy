@@ -1,9 +1,12 @@
 package org.blanketeconomy.api
 
+import net.minecraft.component.DataComponentTypes
+import net.minecraft.component.type.LoreComponent
 import net.minecraft.item.ItemStack
 import net.minecraft.registry.Registries
 import net.minecraft.server.MinecraftServer
 import net.minecraft.server.network.ServerPlayerEntity
+import net.minecraft.text.Text
 import net.minecraft.util.Identifier
 import org.blanketeconomy.Blanketconfig
 import java.math.BigDecimal
@@ -168,7 +171,7 @@ class BlanketEconomyAPI(override val server: MinecraftServer) : EconomyAPI {
         var totalCount = 0
 
         player.inventory.main.forEach { stack ->
-            if (stack.item == itemStack.item && stack.hasNbt() && stack.nbt == itemStack.nbt) {
+            if (stack.item == itemStack.item && itemStackHasNbt(stack) && getItemStackNbt(stack) == getItemStackNbt(itemStack)) {
                 totalCount += stack.count
             }
         }
@@ -186,14 +189,24 @@ class BlanketEconomyAPI(override val server: MinecraftServer) : EconomyAPI {
 
     override fun getCurrencyItemType(itemStack: ItemStack): String? {
         Blanketconfig.config.economy.forEach { currencyConfig ->
-            val item = Registries.ITEM.get(Identifier(currencyConfig.material))
-            if (itemStack.item == item && itemStack.hasNbt()) {
-                val nbtData = itemStack.nbt
-                if (nbtData != null && nbtData.getInt("CustomModelData") == currencyConfig.custommodeldata) {
+            val item = Registries.ITEM.get(Identifier.of(currencyConfig.material))
+            if (itemStack.item == item && itemStackHasNbt(itemStack)) {
+                if (itemStack.get(DataComponentTypes.CUSTOM_MODEL_DATA)?.value == currencyConfig.custommodeldata) {
                     return currencyConfig.currencyType
                 }
             }
         }
         return null
+    }
+
+    private fun getItemStackNbt(itemStack: ItemStack): Pair<Text?, LoreComponent?> {
+        return Pair(itemStack.get(DataComponentTypes.CUSTOM_NAME), itemStack.get(DataComponentTypes.LORE))
+    }
+
+    private fun itemStackHasNbt(itemStack: ItemStack): Boolean {
+        val customName = itemStack.get(DataComponentTypes.CUSTOM_NAME)
+        val lore = itemStack.get(DataComponentTypes.LORE)
+
+        return customName != null || lore != LoreComponent(listOf())
     }
 }
