@@ -14,10 +14,11 @@ import net.minecraft.server.network.ServerPlayerEntity
 import net.minecraft.text.Text
 import net.minecraft.item.ItemStack
 import net.minecraft.item.Items
-import net.minecraft.nbt.NbtList
-import net.minecraft.nbt.NbtString
 import org.blanketeconomy.Blanketconfig.config
 import me.lucko.fabric.api.permissions.v0.Permissions
+import net.minecraft.component.DataComponentTypes
+import net.minecraft.component.type.CustomModelDataComponent
+import net.minecraft.component.type.LoreComponent
 import org.blanketeconomy.utils.CustomColorParser
 import java.math.BigDecimal
 
@@ -235,17 +236,12 @@ class Blanketeconomy : ModInitializer {
 
             if (currencyConfig != null) {
                 val paperStack = ItemStack(Items.PAPER, amount).apply {
-                    orCreateNbt.putInt("CustomModelData", currencyConfig.custommodeldata)
+                    set(DataComponentTypes.CUSTOM_MODEL_DATA, CustomModelDataComponent(currencyConfig.custommodeldata))
 
-                    setCustomName(CustomColorParser.toNativeComponent(currencyConfig.name))
+                    set(DataComponentTypes.CUSTOM_NAME, CustomColorParser.toNativeComponent(currencyConfig.name))
 
-                    val displayTag = orCreateNbt.getCompound("display")
-                    val loreList = NbtList()
-
-                    loreList.add(NbtString.of(Text.Serializer.toJson(CustomColorParser.toNativeComponent(currencyConfig.lore))))
-
-                    displayTag.put("Lore", loreList)
-                    orCreateNbt.put("display", displayTag)
+                    val loreList: List<Text> = listOf(Text.literal(currencyConfig.lore))
+                    set(DataComponentTypes.LORE, LoreComponent(loreList))
                 }
 
                 player.inventory.offerOrDrop(paperStack)
@@ -286,8 +282,8 @@ class Blanketeconomy : ModInitializer {
     }
 
     private fun isCobbleCoin(stack: ItemStack, currencyType: String): Boolean {
-        val tag = stack.orCreateNbt
-        return tag.getInt("CustomModelData") == config.economy.find { it.currencyType == currencyType }?.custommodeldata
+        val data = stack.get(DataComponentTypes.CUSTOM_MODEL_DATA)?.value
+        return data == config.economy.find { it.currencyType == currencyType }?.custommodeldata
     }
 
     private fun initializePlayerData(player: ServerPlayerEntity) {

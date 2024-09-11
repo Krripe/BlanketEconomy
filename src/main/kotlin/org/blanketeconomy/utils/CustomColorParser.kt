@@ -3,6 +3,7 @@ package org.blanketeconomy.utils
 import net.kyori.adventure.text.Component
 import net.kyori.adventure.text.minimessage.MiniMessage
 import net.kyori.adventure.text.serializer.gson.GsonComponentSerializer
+import net.minecraft.registry.BuiltinRegistries
 import net.minecraft.text.MutableText
 import net.minecraft.text.Text
 
@@ -14,7 +15,10 @@ object CustomColorParser {
     }
 
     private fun toNative(component: Component): Text? {
-        return Text.Serializer.fromJson(GsonComponentSerializer.gson().serialize(component))
+        val serializedComponent = GsonComponentSerializer.gson().serialize(component)
+
+        return Text.Serialization.fromJson(serializedComponent, BuiltinRegistries.createWrapperLookup())
+        //return Text.Serializer.fromJson(GsonComponentSerializer.gson().serialize(component))
     }
 
     private fun replaceNative(displayname: String): String {
