@@ -4,6 +4,7 @@ import net.minecraft.item.ItemStack
 import net.minecraft.server.MinecraftServer
 import java.math.BigDecimal
 import java.util.UUID
+import org.blanketeconomy.Blanketconfig
 
 interface EconomyAPI {
     /**
@@ -101,7 +102,7 @@ interface EconomyAPI {
      * @param balanceStart The starting balance for this currency.
      * @return True if the currency was created successfully, false otherwise.
      */
-    fun createCurrency(name: String, lore: String, material: String, customModelData: Int, balanceStart: BigDecimal): Boolean
+    fun createCurrency(name: String, lore: String, material: String, customModelData: Int, balanceStart: BigDecimal, symbol: String, isPrimary: Boolean): Boolean
 
     /**
      * Checks if a player has enough funds for a transaction.
@@ -179,4 +180,39 @@ interface EconomyAPI {
      * @return The currency type as a string, or null if it is not a currency item.
      */
     fun getCurrencyItemType(itemStack: ItemStack): String?
+
+    /**
+     * Retrieves the primary currency from the configuration.
+     * @return The primary currency as EconomyConfig.
+     */
+    fun getPrimaryCurrency(): Blanketconfig.EconomyConfig?
+
+    /**
+     * Returns the valid currency type or falls back to the primary currency if the type is incorrect.
+     * @param currencyType The requested currency type.
+     * @return The valid currency type or the primary one.
+     */
+    fun getCurrencyTypeOrFallback(currencyType: String): String
+
+    /**
+     * Retrieves the symbol for a specific currency type.
+     * @param currencyType The type of currency.
+     * @return The symbol of the currency as a string, or empty string if not found.
+     */
+    fun getCurrencySymbol(currencyType: String): String
+
+    /**
+     * Retrieves the list of all configured currencies.
+     *
+     * @return A list of `EconomyConfig` representing all available currencies.
+     */
+    fun getCurrencyList(): List<Blanketconfig.EconomyConfig>
+
+    /**
+     * Checks if a currency with the specified type exists.
+     *
+     * @param currencyType The type of currency to check.
+     * @return True if the currency exists, false otherwise.
+     */
+    fun currencyExists(currencyType: String): Boolean
 }

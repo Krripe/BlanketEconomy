@@ -21,6 +21,7 @@ object Blanketconfig {
     data class Config(
         val economy: MutableList<EconomyConfig> = mutableListOf(),
         val messages: Messages,
+        val commands: List<String> = listOf("beco", "eco"),
     )
 
     data class EconomyConfig(
@@ -29,11 +30,12 @@ object Blanketconfig {
         val material: String,
         val custommodeldata: Int,
         val currencyType: String,
-        val balanceStart: BigDecimal
+        val balanceStart: BigDecimal,
+        val symbol: String,
+        var isPrimary: Boolean = false
     )
 
     data class Messages(
-        val balanceMessage: String,
         val paymentSuccess: String,
         val paymentReceived: String,
         val insufficientFunds: String,
@@ -47,7 +49,8 @@ object Blanketconfig {
         val playerNotFound: String,
         val currencyNotFound: String,
         val configReloadSuccess: String,
-        val balanceInitialized: String
+        val balanceHeader: String,
+        val currencyLineFormat: String
     )
 
     private val gson = GsonBuilder().setPrettyPrinting().create()
@@ -57,6 +60,10 @@ object Blanketconfig {
         if (!configFile.exists()) {
             configFile.parentFile.mkdirs()
             val defaultConfig = Config(
+                commands = listOf(
+                    "beco",
+                    "eco"
+                ),
                 economy = mutableListOf(
                     EconomyConfig(
                         name = "&eCobble Coin",
@@ -64,7 +71,9 @@ object Blanketconfig {
                         material = "minecraft:paper",
                         custommodeldata = 7381,
                         currencyType = "cobblecoins",
-                        balanceStart = BigDecimal(500)
+                        balanceStart = BigDecimal(500),
+                        symbol = "$",
+                        isPrimary = true
                     ),
                     EconomyConfig(
                         name = "&6Gold Coin",
@@ -72,11 +81,13 @@ object Blanketconfig {
                         material = "minecraft:gold_ingot",
                         custommodeldata = 1234,
                         currencyType = "goldcoins",
-                        balanceStart = BigDecimal(500)
+                        balanceStart = BigDecimal(500),
+                        symbol = "$",
+                        isPrimary = false
                     )
                 ),
                 messages = Messages(
-                    balanceMessage = "&6Your balance&7: &b%balance% &e%currencyType%",
+
                     paymentSuccess = "&aSuccessfully paid &e%amount% &ato &b%player%!",
                     paymentReceived = "&aYou have received &e%amount% &afrom &b%player%!",
                     insufficientFunds = "&cInsufficient funds!",
@@ -90,7 +101,8 @@ object Blanketconfig {
                     playerNotFound = "&cPlayer &e%player% &cnot found.",
                     currencyNotFound = "&cCurrency configuration not found for &e%currencyType%!",
                     configReloadSuccess = "&aConfiguration reloaded successfully!",
-                    balanceInitialized = "&aYour balance has been initialized to &e%balance% &b%currency%."
+                    balanceHeader ="&6Balance&8:",
+                    currencyLineFormat = "&8-> *7%currency%: &e%amount% &6%symbol%"
                 )
             )
             configFile.writeText(gson.toJson(defaultConfig))
@@ -157,9 +169,22 @@ object Blanketconfig {
         return loadConfig()
     }
 
+    fun getPrimaryCurrency(): EconomyConfig? {
+        return config.economy.find { it.isPrimary }
+    }
+
+    fun getCurrencyTypeOrFallback(currencyType: String): String {
+        val currency = config.economy.find { it.currencyType == currencyType }
+        return currency?.currencyType ?: getPrimaryCurrency()?.currencyType ?: "default_currency"
+    }
+
+    fun getCurrencySymbol(currencyType: String): String {
+        val currency = config.economy.find { it.currencyType == currencyType }
+        return currency?.symbol ?: ""
+    }
+
     fun getMessage(key: String, vararg args: Pair<String, String>): Text {
         var message = when (key) {
-            "balanceMessage" -> config.messages.balanceMessage
             "paymentSuccess" -> config.messages.paymentSuccess
             "paymentReceived" -> config.messages.paymentReceived
             "insufficientFunds" -> config.messages.insufficientFunds
@@ -173,7 +198,8 @@ object Blanketconfig {
             "playerNotFound" -> config.messages.playerNotFound
             "currencyNotFound" -> config.messages.currencyNotFound
             "configReloadSuccess" -> config.messages.configReloadSuccess
-            "balanceInitialized" -> config.messages.balanceInitialized
+            "balanceHeader" -> config.messages.balanceHeader
+            "currencyLineFormat" -> config.messages.currencyLineFormat
             else -> ""
         }
 

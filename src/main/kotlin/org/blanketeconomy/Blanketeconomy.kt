@@ -18,6 +18,7 @@ import net.minecraft.nbt.NbtList
 import net.minecraft.nbt.NbtString
 import org.blanketeconomy.Blanketconfig.config
 import me.lucko.fabric.api.permissions.v0.Permissions
+import org.blanketeconomy.api.EconomyAPI
 import org.blanketeconomy.utils.CustomColorParser
 import java.math.BigDecimal
 
@@ -38,87 +39,76 @@ class Blanketeconomy : ModInitializer {
     }
 
     private fun registerCommands(dispatcher: CommandDispatcher<ServerCommandSource>) {
-        dispatcher.register(
-            CommandManager.literal("beco")
-                .then(CommandManager.literal("balance")
-                    .then(CommandManager.argument("currencyType", StringArgumentType.string())
-                        .suggests { _, builder ->
-                            config.economy.map { it.currencyType }.forEach { builder.suggest(it) }
-                            builder.buildFuture()
-                        }
+        val commands = config.commands ?: listOf("beco", "eco")
+
+        commands.forEach { command ->
+            dispatcher.register(
+                CommandManager.literal(command)
+                    .then(CommandManager.literal("balance")
                         .requires { source ->
                             val player = source.player
                             player != null && hasPermission(player, "blanketeconomy.balance", 2)
                         }
                         .executes { ctx -> showBalance(ctx) }
                     )
-                )
-                .then(CommandManager.literal("pay")
-                    .then(CommandManager.argument("amount", DoubleArgumentType.doubleArg())
-                        .then(CommandManager.argument("player", StringArgumentType.string())
-                            .then(CommandManager.argument("currencyType", StringArgumentType.string())
-                                .suggests { _, builder ->
-                                    config.economy.map { it.currencyType }.forEach { builder.suggest(it) }
-                                    builder.buildFuture()
-                                }
-                                .requires { source ->
-                                    val player = source.player
-                                    player != null && hasPermission(player, "blanketeconomy.pay", 2)
-                                }
-                                .executes { ctx -> pay(ctx) }
+                    .then(CommandManager.literal("pay")
+                        .then(CommandManager.argument("amount", DoubleArgumentType.doubleArg())
+                            .then(CommandManager.argument("player", StringArgumentType.string())
+                                .then(CommandManager.argument("currencyType", StringArgumentType.string())
+                                    .suggests { _, builder ->
+                                        config.economy.map { it.currencyType }.forEach { builder.suggest(it) }
+                                        builder.buildFuture()
+                                    }
+                                    .requires { source ->
+                                        val player = source.player
+                                        player != null && hasPermission(player, "blanketeconomy.pay", 2)
+                                    }
+                                    .executes { ctx -> pay(ctx) }
+                                )
                             )
                         )
                     )
-                )
-                .then(CommandManager.literal("add")
-                    .then(CommandManager.argument("amount", DoubleArgumentType.doubleArg())
-                        .then(CommandManager.argument("player", StringArgumentType.string())
-                            .then(CommandManager.argument("currencyType", StringArgumentType.string())
-                                .suggests { _, builder ->
-                                    config.economy.map { it.currencyType }.forEach { builder.suggest(it) }
-                                    builder.buildFuture()
-                                }
-                                .requires { source ->
-                                    val player = source.player
-                                    player != null && hasPermission(player, "blanketeconomy.add", 4)
-                                }
-                                .executes { ctx -> add(ctx) }
+                    .then(CommandManager.literal("add")
+                        .then(CommandManager.argument("amount", DoubleArgumentType.doubleArg())
+                            .then(CommandManager.argument("player", StringArgumentType.string())
+                                .then(CommandManager.argument("currencyType", StringArgumentType.string())
+                                    .suggests { _, builder ->
+                                        config.economy.map { it.currencyType }.forEach { builder.suggest(it) }
+                                        builder.buildFuture()
+                                    }
+                                    .requires { source ->
+                                        (source.entity == null || hasPermission(
+                                            source.player!!,
+                                            "blanketeconomy.add",
+                                            4
+                                        ))
+                                    }
+                                    .executes { ctx -> add(ctx) }
+                                )
                             )
                         )
                     )
-                )
-                .then(CommandManager.literal("remove")
-                    .then(CommandManager.argument("amount", DoubleArgumentType.doubleArg())
-                        .then(CommandManager.argument("player", StringArgumentType.string())
-                            .then(CommandManager.argument("currencyType", StringArgumentType.string())
-                                .suggests { _, builder ->
-                                    config.economy.map { it.currencyType }.forEach { builder.suggest(it) }
-                                    builder.buildFuture()
-                                }
-                                .requires { source ->
-                                    val player = source.player
-                                    player != null && hasPermission(player, "blanketeconomy.remove", 4)
-                                }
-                                .executes { ctx -> remove(ctx) }
+                    .then(CommandManager.literal("remove")
+                        .then(CommandManager.argument("amount", DoubleArgumentType.doubleArg())
+                            .then(CommandManager.argument("player", StringArgumentType.string())
+                                .then(CommandManager.argument("currencyType", StringArgumentType.string())
+                                    .suggests { _, builder ->
+                                        config.economy.map { it.currencyType }.forEach { builder.suggest(it) }
+                                        builder.buildFuture()
+                                    }
+                                    .requires { source ->
+                                        (source.entity == null || hasPermission(
+                                            source.player!!,
+                                            "blanketeconomy.remove",
+                                            4
+                                        ))
+                                    }
+                                    .executes { ctx -> remove(ctx) }
+                                )
                             )
                         )
                     )
-                )
-                .then(CommandManager.literal("deposit")
-                    .then(CommandManager.argument("currencyType", StringArgumentType.string())
-                        .suggests { _, builder ->
-                            config.economy.map { it.currencyType }.forEach { builder.suggest(it) }
-                            builder.buildFuture()
-                        }
-                        .requires { source ->
-                            val player = source.player
-                            player != null && hasPermission(player, "blanketeconomy.deposit", 2)
-                        }
-                        .executes { ctx -> deposit(ctx) }
-                    )
-                )
-                .then(CommandManager.literal("withdraw")
-                    .then(CommandManager.argument("amount", IntegerArgumentType.integer())
+                    .then(CommandManager.literal("deposit")
                         .then(CommandManager.argument("currencyType", StringArgumentType.string())
                             .suggests { _, builder ->
                                 config.economy.map { it.currencyType }.forEach { builder.suggest(it) }
@@ -126,27 +116,55 @@ class Blanketeconomy : ModInitializer {
                             }
                             .requires { source ->
                                 val player = source.player
-                                player != null && hasPermission(player, "blanketeconomy.withdraw", 2)
+                                player != null && hasPermission(player, "blanketeconomy.deposit", 2)
                             }
-                            .executes { ctx -> withdraw(ctx) }
+                            .executes { ctx -> deposit(ctx) }
                         )
                     )
-                )
-                .then(CommandManager.literal("reload")
-                    .requires { source ->
-                        val player = source.player
-                        player != null && hasPermission(player, "blanketeconomy.reload", 4)
-                    }
-                    .executes { ctx -> reloadConfig(ctx) }
-                )
-        )
+                    .then(CommandManager.literal("withdraw")
+                        .then(CommandManager.argument("amount", IntegerArgumentType.integer())
+                            .then(CommandManager.argument("currencyType", StringArgumentType.string())
+                                .suggests { _, builder ->
+                                    config.economy.map { it.currencyType }.forEach { builder.suggest(it) }
+                                    builder.buildFuture()
+                                }
+                                .requires { source ->
+                                    val player = source.player
+                                    player != null && hasPermission(player, "blanketeconomy.withdraw", 2)
+                                }
+                                .executes { ctx -> withdraw(ctx) }
+                            )
+                        )
+                    )
+                    .then(CommandManager.literal("reload")
+                        .requires { source ->
+                            val player = source.player
+                            player != null && hasPermission(player, "blanketeconomy.reload", 4)
+                        }
+                        .executes { ctx -> reloadConfig(ctx) }
+                    )
+            )
+        }
     }
 
     private fun showBalance(ctx: CommandContext<ServerCommandSource>): Int {
         val player = ctx.source.player ?: return 0
-        val currencyType = StringArgumentType.getString(ctx, "currencyType")
-        val balance = Blanketconfig.getBalance(player.uuid, currencyType)
-        val message = Blanketconfig.getMessage("balanceMessage", "balance" to balance.toString(), "currencyType" to currencyType)
+
+        val balanceHeader = Blanketconfig.getMessage("balanceHeader")
+        val message = Text.literal("").append(balanceHeader).append("\n")
+
+        config.economy.forEach { currencyConfig ->
+            val balance = Blanketconfig.getBalance(player.uuid, currencyConfig.currencyType)
+            val currencyLine = Blanketconfig.getMessage(
+                "currencyLineFormat",
+                "currency" to currencyConfig.currencyType,
+                "amount" to balance.toString(),
+                "symbol" to currencyConfig.symbol
+            )
+
+            message.append(currencyLine).append("\n")
+        }
+
         player.sendMessage(message, false)
         return 1
     }
@@ -185,7 +203,7 @@ class Blanketeconomy : ModInitializer {
         val playerName = StringArgumentType.getString(ctx, "player")
         val currencyType = StringArgumentType.getString(ctx, "currencyType")
 
-        val player = source.server.playerManager.getPlayer(playerName)
+        val player = ctx.source.server.playerManager.getPlayer(playerName)
         if (player == null) {
             source.sendMessage(Blanketconfig.getMessage("playerNotFound", "player" to playerName))
             return 0
@@ -205,7 +223,7 @@ class Blanketeconomy : ModInitializer {
         val playerName = StringArgumentType.getString(ctx, "player")
         val currencyType = StringArgumentType.getString(ctx, "currencyType")
 
-        val player = source.server.playerManager.getPlayer(playerName)
+        val player = ctx.source.server.playerManager.getPlayer(playerName)
         if (player == null) {
             source.sendMessage(Blanketconfig.getMessage("playerNotFound", "player" to playerName))
             return 0
@@ -295,7 +313,6 @@ class Blanketeconomy : ModInitializer {
             val currencyType = currency.currencyType
             if (!Blanketconfig.hasUserData(player.uuid, currencyType)) {
                 Blanketconfig.initializeUserData(player.uuid, currencyType)
-                player.sendMessage(Blanketconfig.getMessage("balanceInitialized", "balance" to currency.balanceStart.toString(), "currency" to currency.name))
             }
         }
     }

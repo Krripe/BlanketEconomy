@@ -20,7 +20,21 @@ class BlanketEconomyAPI(override val server: MinecraftServer) : EconomyAPI {
     private val transactionHistory = mutableMapOf<UUID, MutableList<Transaction>>()
 
     override fun getBalance(playerId: UUID, currencyType: String): BigDecimal {
-        return Blanketconfig.getBalance(playerId, currencyType)
+        val actualCurrencyType = if (currencyType.isBlank() || !currencyExists(currencyType)) {
+            BlanketEconomy.getAPI().getPrimaryCurrency()?.currencyType ?: "default_currency"
+        } else {
+            currencyType
+        }
+
+        return BlanketEconomy.getAPI().getBalance(playerId, actualCurrencyType)
+    }
+
+    override fun getCurrencyList(): List<Blanketconfig.EconomyConfig> {
+        return Blanketconfig.config.economy
+    }
+
+    override fun currencyExists(currencyType: String): Boolean {
+        return BlanketEconomy.getAPI().getCurrencyList().any { it.currencyType == currencyType }
     }
 
     override fun setBalance(playerId: UUID, balance: BigDecimal, currencyType: String) {
@@ -82,16 +96,35 @@ class BlanketEconomyAPI(override val server: MinecraftServer) : EconomyAPI {
         return transactionHistory[playerId] ?: emptyList()
     }
 
-    override fun createCurrency(name: String, lore: String, material: String, customModelData: Int, balanceStart: BigDecimal): Boolean {
+    override fun createCurrency(
+        name: String,
+        lore: String,
+        material: String,
+        customModelData: Int,
+        balanceStart: BigDecimal,
+        symbol: String,
+        isPrimary: Boolean
+    ): Boolean {
         val newCurrency = Blanketconfig.EconomyConfig(
             name = name,
             lore = lore,
             material = material,
             custommodeldata = customModelData,
             currencyType = name.lowercase(Locale.getDefault()).replace(" ", "_"),
-            balanceStart = balanceStart
+            balanceStart = balanceStart,
+            symbol = symbol,
+            isPrimary = isPrimary
         )
         Blanketconfig.config.economy.add(newCurrency)
+
+        if (isPrimary) {
+            Blanketconfig.config.economy.forEach {
+                if (it.currencyType != newCurrency.currencyType) {
+                    it.isPrimary = false
+                }
+            }
+        }
+
         Blanketconfig.saveConfig()
         return true
     }
@@ -195,5 +228,17 @@ class BlanketEconomyAPI(override val server: MinecraftServer) : EconomyAPI {
             }
         }
         return null
+    }
+
+    override fun getPrimaryCurrency(): Blanketconfig.EconomyConfig? {
+        return Blanketconfig.getPrimaryCurrency()
+    }
+
+    override fun getCurrencyTypeOrFallback(currencyType: String): String {
+        return Blanketconfig.getCurrencyTypeOrFallback(currencyType)
+    }
+
+    override fun getCurrencySymbol(currencyType: String): String {
+        return Blanketconfig.getCurrencySymbol(currencyType)
     }
 }
