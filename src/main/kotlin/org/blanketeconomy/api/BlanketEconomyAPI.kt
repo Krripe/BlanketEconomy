@@ -21,12 +21,12 @@ class BlanketEconomyAPI(override val server: MinecraftServer) : EconomyAPI {
 
     override fun getBalance(playerId: UUID, currencyType: String): BigDecimal {
         val actualCurrencyType = if (currencyType.isBlank() || !currencyExists(currencyType)) {
-            BlanketEconomy.getAPI().getPrimaryCurrency()?.currencyType ?: "default_currency"
+            Blanketconfig.getPrimaryCurrency()?.currencyType ?: "default_currency"
         } else {
             currencyType
         }
 
-        return BlanketEconomy.getAPI().getBalance(playerId, actualCurrencyType)
+        return Blanketconfig.getBalance(playerId, actualCurrencyType)
     }
 
     override fun getCurrencyList(): List<Blanketconfig.EconomyConfig> {
@@ -38,8 +38,15 @@ class BlanketEconomyAPI(override val server: MinecraftServer) : EconomyAPI {
     }
 
     override fun setBalance(playerId: UUID, balance: BigDecimal, currencyType: String) {
-        Blanketconfig.setBalance(playerId, balance, currencyType)
-        listeners.forEach { it.onBalanceChanged(playerId, currencyType, balance) }
+        val actualCurrencyType = if (currencyType.isBlank() || !currencyExists(currencyType)) {
+            Blanketconfig.getPrimaryCurrency()?.currencyType ?: "default_currency"
+        } else {
+            currencyType
+        }
+
+        Blanketconfig.setBalance(playerId, balance, actualCurrencyType)
+
+        listeners.forEach { it.onBalanceChanged(playerId, actualCurrencyType, balance) }
     }
 
     override fun addBalance(playerId: UUID, amount: BigDecimal, currencyType: String) {

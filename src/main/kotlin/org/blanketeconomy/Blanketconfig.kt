@@ -1,7 +1,7 @@
 package org.blanketeconomy
 
 import com.google.gson.GsonBuilder
-import net.minecraft.text.Text
+import net.minecraft.text.MutableText
 import java.io.File
 import java.math.BigDecimal
 import java.nio.file.Files
@@ -183,7 +183,7 @@ object Blanketconfig {
         return currency?.symbol ?: ""
     }
 
-    fun getMessage(key: String, vararg args: Pair<String, String>): Text {
+    fun getMessage(key: String, vararg args: Pair<String, String>): MutableText? {
         var message = when (key) {
             "paymentSuccess" -> config.messages.paymentSuccess
             "paymentReceived" -> config.messages.paymentReceived

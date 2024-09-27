@@ -9,43 +9,35 @@ import net.minecraft.text.Text
 object CustomColorParser {
     private val miniMessage = MiniMessage.miniMessage()
 
-    private fun toNative(displayname: String): Text? {
-        return toNative(miniMessage.deserialize(replaceNative(displayname)))
-    }
-
-    private fun toNative(component: Component): Text? {
+    fun toNativeComponent(messageContent: String): MutableText? {
+        val miniMessageString = replaceMinecraftCodesWithMiniMessage(messageContent)
+        val component: Component = miniMessage.deserialize(miniMessageString)
         return Text.Serializer.fromJson(GsonComponentSerializer.gson().serialize(component))
     }
 
-    private fun replaceNative(displayname: String): String {
-        var processedDisplayName = displayname
-        processedDisplayName = processedDisplayName.replace("&", "§")
-            .replace("§0", "§r<black>")
-            .replace("§1", "§r<dark_blue>")
-            .replace("§2", "§r<dark_green>")
-            .replace("§3", "§r<dark_aqua>")
-            .replace("§4", "§r<dark_red>")
-            .replace("§5", "§r<dark_purple>")
-            .replace("§6", "§r<gold>")
-            .replace("§7", "§r<gray>")
-            .replace("§8", "§r<dark_gray>")
-            .replace("§9", "§r<blue>")
-            .replace("§a", "§r<green>")
-            .replace("§b", "§r<aqua>")
-            .replace("§c", "§r<red>")
-            .replace("§d", "§r<light_purple>")
-            .replace("§e", "§r<yellow>")
-            .replace("§f", "§r<white>")
+    private fun replaceMinecraftCodesWithMiniMessage(text: String): String {
+        return text.replace("&", "§")
+            .replace("§0", "<black>")
+            .replace("§1", "<dark_blue>")
+            .replace("§2", "<dark_green>")
+            .replace("§3", "<dark_aqua>")
+            .replace("§4", "<dark_red>")
+            .replace("§5", "<dark_purple>")
+            .replace("§6", "<gold>")
+            .replace("§7", "<gray>")
+            .replace("§8", "<dark_gray>")
+            .replace("§9", "<blue>")
+            .replace("§a", "<green>")
+            .replace("§b", "<aqua>")
+            .replace("§c", "<red>")
+            .replace("§d", "<light_purple>")
+            .replace("§e", "<yellow>")
+            .replace("§f", "<white>")
             .replace("§k", "<obfuscated>")
             .replace("§l", "<bold>")
             .replace("§m", "<strikethrough>")
             .replace("§n", "<underline>")
             .replace("§o", "<italic>")
             .replace("§r", "<reset>")
-        return processedDisplayName
-    }
-
-    fun toNativeComponent(messageContent: String): MutableText {
-        return Text.empty().append(toNative(messageContent))
     }
 }
